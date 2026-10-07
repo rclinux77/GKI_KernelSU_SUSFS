@@ -909,6 +909,18 @@ jobs:
             echo "CONFIG_NOMOUNT=y 已存在，跳过"
           fi
 
+      - name: 注入NTsync内核配置
+        run: |
+            cd "$KERNEL_ROOT"
+            cd ./common
+            wget "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_base.patch"
+            wget "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_compat_android12-5.10.patch"
+            patch -p1 < 'ntsync_base.patch'
+            patch -p1 < 'ntsync_compat_android12-5.10.patch'            
+            cd ../
+            #开启NTsync内核配置
+            echo "CONFIG_NTSYNC=y" >> ./common/arch/arm64/configs/gki_defconfig
+
       - name: 集成 Droidspaces 支持
         if: inputs.droidspaces != 'off'
         working-directory: ${{ env.KERNEL_ROOT }}/common
