@@ -544,7 +544,8 @@ jobs:
               ;;
             "SukiSU")
               if [ "${{ inputs.enable_susfs }}" = "false" ]; then
-                BRANCH="-s main"
+                # BRANCH="-s main"
+                BRANCH="-s v4.2.0"
               else
                 BRANCH="-s builtin"
               fi
