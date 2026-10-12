@@ -631,6 +631,33 @@ jobs:
             echo "KSU_LATEST_COMMIT_DATE=未知" >> $GITHUB_ENV
           fi
 
+      - name: 强制 SukiSU 内核 KSU 版本号（对齐管理器侧）
+        if: (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'SukiSU(40726)' || inputs.ksu_variant == 'SukiSU(40548)') && inputs.ksu_mode != '禁用KSU'
+        working-directory: ${{ env.KERNEL_ROOT }}/KernelSU
+        run: |
+          KBUILD_FILE="./kernel/Kbuild"
+          if [ ! -f "$KBUILD_FILE" ]; then
+            echo "未找到 $KBUILD_FILE，跳过 SukiSU 版本号强制覆盖"
+            exit 0
+          fi
+
+          # 该映射必须与 .github/workflows/get-manager.yml 中对 SukiSU 变体硬编码的
+          # KSU_VERSION 保持一致，否则内核与管理器版本仍会对不上。
+          case "${{ inputs.ksu_variant }}" in
+            "SukiSU")          TARGET_KSU_VERSION=40900 ;;
+            "SukiSU(40726)")   TARGET_KSU_VERSION=40726 ;;
+            "SukiSU(40548)")   TARGET_KSU_VERSION=40548 ;;
+            *) echo "非 SukiSU 变体，跳过"; exit 0 ;;
+          esac
+
+          echo "将 SukiSU 内核对外报告的 KSU_VERSION 强制覆盖为 $TARGET_KSU_VERSION（与 get-manager 侧一致）"
+          # SukiSU-Ultra 的 kernel/Kbuild 把 REPO_BRANCH 写死为 main，导致 KSU_VERSION 永远按
+          # main 的提交数计算（即“最新版”）。此处直接覆盖计算结果为固定值。
+          sed -i -E "s|^KSU_VERSION[[:space:]]*:=.*|KSU_VERSION := ${TARGET_KSU_VERSION}|" "$KBUILD_FILE"
+
+          echo "覆盖后 KSU_VERSION 定义:"
+          grep -nE "^KSU_VERSION[[:space:]]*:= " "$KBUILD_FILE" || true
+
       - name: 配置 SukiSU 管理器信息
         if: (inputs.ksu_variant == 'SukiSU' || inputs.ksu_variant == 'SukiSU(40726)' || inputs.ksu_variant == 'SukiSU(40548)') && inputs.ksu_mode != '禁用KSU'
         working-directory: ${{ env.KERNEL_ROOT }}/KernelSU
